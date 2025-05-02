@@ -1,4 +1,5 @@
 import numpy as np
+
 fiis = np.array(["bcff11", "bpff11", "hctr11", "hfof11", "btal11"])
 stocks = np.array(["itub4", "itsa4", "taee4", "taee11", "taee3", "wizs3", "sapr4",
                    "sapr3", "egie3", "enbr3", "klbn4", "klbn3", "klbn11", "cyre3",
@@ -24,6 +25,6 @@ stocks = np.array(["itub4", "itsa4", "taee4", "taee11", "taee3", "wizs3", "sapr4
                    "sgps3", "teka3", "teka4", "txrx3", "txrx4", "hgtx3", "tfco4",
                    "ucas3", "heta3", "heta4", "smft3", "bmks3", "estr3", "estr4",
                    "aheb3", "aheb5", "vulc3"
-    ])
+                   ])
 bdrs = np.array(["nvdc34", "csco34", "aapl34", "mmmc34", "a1bb34", "abtt34", "atvi34", "adbe34"])
 etfs = np.array(["ivvb11", "smal11", "bova11"])

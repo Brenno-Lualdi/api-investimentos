@@ -1,7 +1,6 @@
 import numpy
-from get_price_cryptocurrencies import updateCryptos
-from lists import fiis, bdrs, stocks, etfs
 import requests
+from lists import fiis, bdrs, stocks, etfs
 from bs4 import BeautifulSoup
 from get_data_internet import getAllValuesFiis, getAllValuesStocks, getAllValuesEtfs, getAllValuesBdrs
 
@@ -12,7 +11,6 @@ totalStocks = numpy.append(totalStocks, bdrs)
 totalStocks = numpy.append(totalStocks, etfs)
 
 print("Rodando dnv")
-updateCryptos()
 for x in range(1, totalLengthStocks):
     typeStock = totalStocks[x]
     if typeStock in stocks:
