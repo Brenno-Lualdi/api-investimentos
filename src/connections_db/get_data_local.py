@@ -1,11 +1,13 @@
 import sqlite3
 
+from src.utils.logger import log
+
 
 class DataLocal:
     def getData(self, ticker: str):
         db = sqlite3.connect("./database/tickers.db")
         data = db.execute(f"select * from dataStock where ticker='{ticker.upper()}'").fetchall()
-        # print(data[0])
+        log.debug(data[0])
         return {
             "nome": data[0][0],
             "info": data[0][1],

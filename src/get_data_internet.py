@@ -1,9 +1,22 @@
 import sqlite3
 import wikipedia
+
 from deep_translator import GoogleTranslator
+
+from src.utils.logger import log
 
 infoAction = {}
 dataJson = {}
+
+
+def _get_value_from_str(value: str) -> float:
+    """
+    Convert a string value to a float, handling commas and percentage signs.
+    """
+    try:
+        return float(value.replace(",", ".").replace("%", "").replace("R$ ", ""))
+    except ValueError:
+        return 0.0
 
 
 class BasicData:
@@ -20,7 +33,7 @@ class BasicData:
             return GoogleTranslator(
                 source="auto", target="pt").translate(text)
         except:
-            # print("Não conseguiu pegar da Wikipédia/traduzir")
+            log.error("Não conseguiu pegar da Wikipédia/traduzir")
             return "Nada encontrado...."
 
     def getDatasInternet(self):
@@ -43,48 +56,23 @@ class BasicData:
 
     def writeData(self, infoAction):
         db = sqlite3.connect("./database/tickers.db")
-        try:
-            infoAction["dy"] = float(str(infoAction["dy"]).replace(",", "."))
-        except:
-            infoAction["dy"] = 0.0
 
-        try:
-            infoAction["valorizacaoCota"] = float(str(infoAction["valorizacaoCota"]).replace(",", ".").replace("%", ""))
-        except:
-            infoAction["valorizacaoCota"] = 0.0
-
-        try:
-            infoAction['preco_min_cota'] = float(str(infoAction["preco_min_cota"]).replace(",", "."))
-            infoAction['preco_max_cota'] = float(str(infoAction["preco_max_cota"]).replace(",", "."))
-
-        except:
-            infoAction["preco_min_cota"] = 0.0
-            infoAction["preco_max_cota"] = 0.0
-
-        try:
-            infoAction['ultimo_pagamento'] = float(
-                str(infoAction["ultimo_pagamento"]).replace(",", ".").replace("R$ ", ""))
-        except:
-            infoAction['ultimo_pagamento'] = 0.0
-
-        try:
-            infoAction['oscilacao_cota'] = float(str(infoAction["oscilacao_cota"]).replace(",", ".").replace("%", ""))
-        except:
-            infoAction['oscilacao_cota'] = 0.0
-
-        try:
-            infoAction['valor_cota'] = float(str(infoAction["valor_cota"]).replace(",", "."))
-        except:
-            infoAction['valor_cota'] = 0.0
+        infoAction["dy"] = _get_value_from_str(str(infoAction["dy"]))
+        infoAction["valorizacaoCota"] = _get_value_from_str(str(infoAction["valorizacaoCota"]))
+        infoAction["preco_min_cota"] = _get_value_from_str(str(infoAction["preco_min_cota"]))
+        infoAction["preco_max_cota"] = _get_value_from_str(str(infoAction["preco_max_cota"]))
+        infoAction["ultimo_pagamento"] = _get_value_from_str(str(infoAction["ultimo_pagamento"]))
+        infoAction["oscilacao_cota"] = _get_value_from_str(str(infoAction["oscilacao_cota"]))
+        infoAction["valor_cota"] = _get_value_from_str(str(infoAction["valor_cota"]))
 
         if len(db.execute(f"select * from dataStock where ticker='{self.ticker}'").fetchall()) >= 1:
             db.execute(
                 f"update dataStock SET dy={infoAction['dy']}, precoMinimoCotaEmUmAno={infoAction['preco_min_cota']}, precoMaximoCotaEmUmAno={infoAction['preco_max_cota']}, dividendoEmUmAno={infoAction['ultimo_pagamento']}, oscilacaoCota={infoAction['oscilacao_cota']}, valorCota={infoAction['valor_cota']}, cnpj='{infoAction['cnpj']}', linkSiteRi='{infoAction['linkSiteRi']}', valorizacaoCotaUmAno={infoAction['valorizacaoCota']} where ticker='{infoAction['ticker']}'")
-            # print("Ação atualizada")
+            log.debug("Ação atualizada")
         else:
             db.execute(
                 f"insert into dataStock values('{infoAction['nome']}','Nada sobre....','{infoAction['ticker']}',{infoAction['dy']},{infoAction['preco_min_cota']},{infoAction['preco_max_cota']}, {infoAction['ultimo_pagamento']}, {infoAction['oscilacao_cota']},{infoAction['valor_cota']}, '{infoAction['linkSiteRi']}', {infoAction['valorizacaoCota']}, '{infoAction['cnpj']}');")
-            # print("Ação inserida")
+            log.debug("Ação inserida")
         db.commit()
         return infoAction
 
@@ -153,20 +141,20 @@ def getValuesMoneyStocks(soup):
     try:
         infoAction["valorizacaoCota"] = soup.find_all("strong", attrs={"class": "value"})[4].text
     except:
-        print(soup.find_all("strong", attrs={"class": "value"}))
+        log.error(soup.find_all("strong", attrs={"class": "value"}))
         infoAction["valorizacaoCota"] = 0.0
     try:
         infoAction["cnpj"] = soup.find_all("small", attrs={"class": "d-block fs-4 fw-100 lh-4"})[0].text
     except:
-        print(soup.find_all("small", attrs={"class": "d-block fs-4 fw-100 lh-4"}))
+        log.error(soup.find_all("small", attrs={"class": "d-block fs-4 fw-100 lh-4"}))
         infoAction["cnpj"] = None
     try:
         infoAction["linkSiteRi"] = soup.find_all("a", attrs={"rel": "noopener noreferrer nofollow",
                                                              "class": "waves-effect waves-light btn btn-small btn-secondary"})[
             0]["href"]
     except:
-        print(soup.find_all("a", attrs={"rel": "noopener noreferrer nofollow",
-                                        "class": "waves-effect waves-light btn btn-small btn-secondary"}))
+        log.error(soup.find_all("a", attrs={"rel": "noopener noreferrer nofollow",
+                                            "class": "waves-effect waves-light btn btn-small btn-secondary"}))
         infoAction["linkSiteRi"] = None
 
     return infoAction
@@ -191,11 +179,6 @@ def getValuesMoneyFiis(soup):
     infoAction["oscilacao_cota"] = soup.find_all('b')[11].text.strip("\n").lstrip().rstrip()
     infoAction["valorizacaoCota"] = soup.find_all("strong", attrs={"class": "value"})[4].text
     infoAction["cnpj"] = soup.find_all("strong", attrs={"class": "value"})[28].text
-    a = soup.find_all("strong", attrs={"class": "value"})
-    i = 0
-    for x in a:
-        # print(f"{x} no index: {i}")
-        i = i + 1
     infoAction["linkSiteRi"] = "none"
 
     return infoAction
