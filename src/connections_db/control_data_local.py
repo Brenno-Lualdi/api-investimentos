@@ -2,11 +2,14 @@ import sqlite3
 
 from src.utils.logger import log
 
+DB_PATH = "connections_db/database/tickers.db"
+
 
 class DataLocal:
     def get_data(self, ticker: str):
-        db = sqlite3.connect("./database/tickers.db")
+        db = sqlite3.connect(DB_PATH)
         data = db.execute(f"select * from dataStock where ticker='{ticker.upper()}'").fetchall()
+        db.close()
         log.debug(data[0])
         return {
             "nome": data[0][0],
@@ -24,8 +27,9 @@ class DataLocal:
         }
 
     def get_order_datas(self, order: str):
-        db = sqlite3.connect("./database/tickers.db")
+        db = sqlite3.connect(DB_PATH)
         datas = db.execute(f"select * from dataStock order by {order}").fetchall()
+        db.close()
         datasInJson = []
         for x in datas:
             if x[0] != "":
@@ -46,9 +50,8 @@ class DataLocal:
         return {"result": datasInJson}
 
     def write_data(self, infoAction):
-        db = sqlite3.connect("./database/tickers.db")
-
-        if len(db.execute(f"select * from dataStock where ticker='{self.ticker}'").fetchall()) >= 1:
+        db = sqlite3.connect(DB_PATH)
+        if len(db.execute(f"select * from dataStock where ticker='{infoAction['ticker']}'").fetchall()) >= 1:
             db.execute(
                 f"update dataStock SET dy={infoAction['dy']}, precoMinimoCotaEmUmAno={infoAction['preco_min_cota']}, "
                 f"precoMaximoCotaEmUmAno={infoAction['preco_max_cota']}, dividendoEmUmAno="
@@ -64,4 +67,5 @@ class DataLocal:
                 f"'{infoAction['linkSiteRi']}', {infoAction['valorizacao_cota']}, '{infoAction['cnpj']}');")
             log.debug("Ação inserida")
         db.commit()
+        db.close()
         return infoAction
