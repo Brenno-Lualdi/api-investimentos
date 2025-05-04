@@ -3,6 +3,7 @@ import wikipedia
 
 from deep_translator import GoogleTranslator
 
+from src.connections_db.control_data_local import DataLocal
 from src.utils.logger import log
 
 infoAction = {}
@@ -53,9 +54,7 @@ class BasicData:
         self.liquidezMediaDiaria = self.soup.find_all("strong", attrs={"class": "value"})[7].text
         return self.liquidezMediaDiaria
 
-    def writeData(self, infoAction):
-        db = sqlite3.connect("./database/tickers.db")
-
+    def prepare_data(self):
         infoAction["dy"] = _get_value_from_str(str(infoAction["dy"]))
         infoAction["valorizacao_cota"] = _get_value_from_str(str(infoAction["valorizacao_cota"]))
         infoAction["preco_min_cota"] = _get_value_from_str(str(infoAction["preco_min_cota"]))
@@ -63,24 +62,6 @@ class BasicData:
         infoAction["ultimo_pagamento"] = _get_value_from_str(str(infoAction["ultimo_pagamento"]))
         infoAction["oscilacao_cota"] = _get_value_from_str(str(infoAction["oscilacao_cota"]))
         infoAction["valor_cota"] = _get_value_from_str(str(infoAction["valor_cota"]))
-
-        if len(db.execute(f"select * from dataStock where ticker='{self.ticker}'").fetchall()) >= 1:
-            db.execute(
-                f"update dataStock SET dy={infoAction['dy']}, precoMinimoCotaEmUmAno={infoAction['preco_min_cota']}, "
-                f"precoMaximoCotaEmUmAno={infoAction['preco_max_cota']}, dividendoEmUmAno="
-                f"{infoAction['ultimo_pagamento']}, oscilacaoCota={infoAction['oscilacao_cota']}, valorCota="
-                f"{infoAction['valor_cota']}, cnpj='{infoAction['cnpj']}', linkSiteRi='{infoAction['linkSiteRi']}', "
-                f"valorizacaoCotaUmAno={infoAction['valorizacao_cota']} where ticker='{infoAction['ticker']}'")
-            log.debug("Ação atualizada")
-        else:
-            db.execute(
-                f"insert into dataStock values('{infoAction['nome']}','Nada sobre....','{infoAction['ticker']}',"
-                f"{infoAction['dy']},{infoAction['preco_min_cota']},{infoAction['preco_max_cota']}, "
-                f"{infoAction['ultimo_pagamento']}, {infoAction['oscilacao_cota']},{infoAction['valor_cota']}, "
-                f"'{infoAction['linkSiteRi']}', {infoAction['valorizacao_cota']}, '{infoAction['cnpj']}');")
-            log.debug("Ação inserida")
-        db.commit()
-        return infoAction
 
 
 # ------------------------------------------
@@ -103,7 +84,8 @@ def getAllValuesBdrs(soup, ticker: str):
     comandBasics = BasicData(soup, ticker)
     comandBasics.getDatasInternet()
     infoAction = getValuesMoneyBdrs(soup)
-    comandBasics.writeData(infoAction)
+    comandBasics.prepare_data()
+    DataLocal().writeData(infoAction)
     return infoAction
 
 
@@ -126,7 +108,8 @@ def getAllValuesEtfs(soup, ticker: str):
     comandBasics = BasicData(soup, ticker)
     comandBasics.getDatasInternet()
     infoAction = getValuesMoneyEtfs(soup)
-    comandBasics.writeData(infoAction)
+    comandBasics.prepare_data()
+    DataLocal().writeData(infoAction)
     return infoAction
 
 
@@ -148,7 +131,7 @@ def getValuesMoneyStocks(soup):
                                               "td:nth-child(3)"))[0].text
     infoAction["valor_cota"] = soup.find_all("div", {'title': 'Valor atual do ativo'})[0].find('strong').text
     infoAction["oscilacao_cota"] = \
-    soup.find_all("span", {'title': 'Variação do valor do ativo com base no dia anterior'})[0].find('b').text
+        soup.find_all("span", {'title': 'Variação do valor do ativo com base no dia anterior'})[0].find('b').text
     try:
         infoAction["valorizacao_cota"] = soup.find_all("div", {'title': 'Valorização no preço do ativo com base nos '
                                                                         'últimos 12 meses'})[0].find('strong').text
@@ -176,7 +159,8 @@ def getAllValuesStocks(soup, ticker: str):
     comandBasics = BasicData(soup, ticker)
     comandBasics.getDatasInternet()
     infoAction = getValuesMoneyStocks(soup)
-    comandBasics.writeData(infoAction)
+    comandBasics.prepare_data()
+    DataLocal().writeData(infoAction)
     return infoAction
 
 
@@ -200,5 +184,6 @@ def getAllValuesFiis(soup, ticker: str):
     comandBasics = BasicData(soup, ticker)
     comandBasics.getDatasInternet()
     infoAction = getValuesMoneyFiis(soup)
-    comandBasics.writeData(infoAction)
+    comandBasics.prepare_data()
+    DataLocal().writeData(infoAction)
     return infoAction

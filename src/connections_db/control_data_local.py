@@ -44,3 +44,24 @@ class DataLocal:
                     "cnpj": x[11]}
                 })
         return {"result": datasInJson}
+
+    def writeData(self, infoAction):
+        db = sqlite3.connect("./database/tickers.db")
+
+        if len(db.execute(f"select * from dataStock where ticker='{self.ticker}'").fetchall()) >= 1:
+            db.execute(
+                f"update dataStock SET dy={infoAction['dy']}, precoMinimoCotaEmUmAno={infoAction['preco_min_cota']}, "
+                f"precoMaximoCotaEmUmAno={infoAction['preco_max_cota']}, dividendoEmUmAno="
+                f"{infoAction['ultimo_pagamento']}, oscilacaoCota={infoAction['oscilacao_cota']}, valorCota="
+                f"{infoAction['valor_cota']}, cnpj='{infoAction['cnpj']}', linkSiteRi='{infoAction['linkSiteRi']}', "
+                f"valorizacaoCotaUmAno={infoAction['valorizacao_cota']} where ticker='{infoAction['ticker']}'")
+            log.debug("Ação atualizada")
+        else:
+            db.execute(
+                f"insert into dataStock values('{infoAction['nome']}','Nada sobre....','{infoAction['ticker']}',"
+                f"{infoAction['dy']},{infoAction['preco_min_cota']},{infoAction['preco_max_cota']}, "
+                f"{infoAction['ultimo_pagamento']}, {infoAction['oscilacao_cota']},{infoAction['valor_cota']}, "
+                f"'{infoAction['linkSiteRi']}', {infoAction['valorizacao_cota']}, '{infoAction['cnpj']}');")
+            log.debug("Ação inserida")
+        db.commit()
+        return infoAction
