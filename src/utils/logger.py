@@ -19,7 +19,7 @@ class CustomFormatter(logging.Formatter):
         return dt.strftime("%Y/%m/%d %H:%M:%S:%f")[:-3]
 
     def format(self, record):
-        record.class_method = f"{record.module}.{record.funcName}"
+        record.class_method = f"{record.module}.{record.funcName}:{record.lineno}"
         log_color = self.LEVEL_COLORS.get(record.levelname, "")
         record.levelname = f"{log_color}{record.levelname}"
         return super().format(record)
