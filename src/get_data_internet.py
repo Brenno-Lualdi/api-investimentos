@@ -30,8 +30,7 @@ class BasicData:
     def getInfoWikipedia(self):
         try:
             text = wikipedia.summary("Empresa: " + infoAction["nome"], 3)
-            return GoogleTranslator(
-                source="auto", target="pt").translate(text)
+            return GoogleTranslator(source="auto", target="pt").translate(text)
         except:
             log.error("Não conseguiu pegar da Wikipédia/traduzir")
             return "Nada encontrado...."
@@ -58,7 +57,7 @@ class BasicData:
         db = sqlite3.connect("./database/tickers.db")
 
         infoAction["dy"] = _get_value_from_str(str(infoAction["dy"]))
-        infoAction["valorizacaoCota"] = _get_value_from_str(str(infoAction["valorizacaoCota"]))
+        infoAction["valorizacao_cota"] = _get_value_from_str(str(infoAction["valorizacao_cota"]))
         infoAction["preco_min_cota"] = _get_value_from_str(str(infoAction["preco_min_cota"]))
         infoAction["preco_max_cota"] = _get_value_from_str(str(infoAction["preco_max_cota"]))
         infoAction["ultimo_pagamento"] = _get_value_from_str(str(infoAction["ultimo_pagamento"]))
@@ -67,11 +66,18 @@ class BasicData:
 
         if len(db.execute(f"select * from dataStock where ticker='{self.ticker}'").fetchall()) >= 1:
             db.execute(
-                f"update dataStock SET dy={infoAction['dy']}, precoMinimoCotaEmUmAno={infoAction['preco_min_cota']}, precoMaximoCotaEmUmAno={infoAction['preco_max_cota']}, dividendoEmUmAno={infoAction['ultimo_pagamento']}, oscilacaoCota={infoAction['oscilacao_cota']}, valorCota={infoAction['valor_cota']}, cnpj='{infoAction['cnpj']}', linkSiteRi='{infoAction['linkSiteRi']}', valorizacaoCotaUmAno={infoAction['valorizacaoCota']} where ticker='{infoAction['ticker']}'")
+                f"update dataStock SET dy={infoAction['dy']}, precoMinimoCotaEmUmAno={infoAction['preco_min_cota']}, "
+                f"precoMaximoCotaEmUmAno={infoAction['preco_max_cota']}, dividendoEmUmAno="
+                f"{infoAction['ultimo_pagamento']}, oscilacaoCota={infoAction['oscilacao_cota']}, valorCota="
+                f"{infoAction['valor_cota']}, cnpj='{infoAction['cnpj']}', linkSiteRi='{infoAction['linkSiteRi']}', "
+                f"valorizacaoCotaUmAno={infoAction['valorizacao_cota']} where ticker='{infoAction['ticker']}'")
             log.debug("Ação atualizada")
         else:
             db.execute(
-                f"insert into dataStock values('{infoAction['nome']}','Nada sobre....','{infoAction['ticker']}',{infoAction['dy']},{infoAction['preco_min_cota']},{infoAction['preco_max_cota']}, {infoAction['ultimo_pagamento']}, {infoAction['oscilacao_cota']},{infoAction['valor_cota']}, '{infoAction['linkSiteRi']}', {infoAction['valorizacaoCota']}, '{infoAction['cnpj']}');")
+                f"insert into dataStock values('{infoAction['nome']}','Nada sobre....','{infoAction['ticker']}',"
+                f"{infoAction['dy']},{infoAction['preco_min_cota']},{infoAction['preco_max_cota']}, "
+                f"{infoAction['ultimo_pagamento']}, {infoAction['oscilacao_cota']},{infoAction['valor_cota']}, "
+                f"'{infoAction['linkSiteRi']}', {infoAction['valorizacao_cota']}, '{infoAction['cnpj']}');")
             log.debug("Ação inserida")
         db.commit()
         return infoAction
@@ -85,7 +91,7 @@ def getValuesMoneyBdrs(soup):
     infoAction["ultimo_pagamento"] = soup.find_all("span")[33].text
     infoAction["valor_cota"] = soup.find('strong').text
     infoAction["dy"] = soup.find_all("strong")[3].text
-    infoAction["valorizacaoCota"] = soup.find_all("strong")[4].text
+    infoAction["valorizacao_cota"] = soup.find_all("strong")[4].text
     infoAction["oscilacao_cota"] = soup.find_all('b')[11].text.strip("\n").lstrip().rstrip()
     infoAction["cnpj"] = "none"
     infoAction["linkSiteRi"] = "none"
@@ -128,21 +134,27 @@ def getAllValuesEtfs(soup, ticker: str):
 
 def getValuesMoneyStocks(soup):
     try:
-        infoAction["dy"] = soup.find_all("strong")[3].text
-    except IndexError:
-        infoAction["dy"] = soup.find("strong")
+        infoAction["dy"] = soup.find_all("div", {'title': 'Dividend Yield com base nos últimos 12 meses'})[0].find(
+            'strong').text
     except:
         infoAction["dy"] = 0
-    infoAction["preco_min_cota"] = soup.find_all("strong")[1].text
-    infoAction["preco_max_cota"] = soup.find_all("strong")[2].text
-    infoAction["ultimo_pagamento"] = soup.find_all("span")[32].text
-    infoAction["valor_cota"] = soup.find('strong').text
-    infoAction["oscilacao_cota"] = soup.find_all('b')[11].text.strip("\n").lstrip().rstrip()
+    infoAction["preco_min_cota"] = soup.find_all("div", {'title': 'Valor mínimo das últimas 52 semanas'})[0].find(
+        'strong').text
+    infoAction["preco_max_cota"] = soup.find_all("div", {'title': 'Valor máximo das últimas 52 semanas'})[0].find(
+        'strong').text
+
+    infoAction["ultimo_pagamento"] = (soup.find('div', {"id": "earning-section"})
+                                      .select("div > div > div:nth-child(2) > table > tbody > tr:nth-child(1) > "
+                                              "td:nth-child(3)"))[0].text
+    infoAction["valor_cota"] = soup.find_all("div", {'title': 'Valor atual do ativo'})[0].find('strong').text
+    infoAction["oscilacao_cota"] = \
+    soup.find_all("span", {'title': 'Variação do valor do ativo com base no dia anterior'})[0].find('b').text
     try:
-        infoAction["valorizacaoCota"] = soup.find_all("strong", attrs={"class": "value"})[4].text
+        infoAction["valorizacao_cota"] = soup.find_all("div", {'title': 'Valorização no preço do ativo com base nos '
+                                                                        'últimos 12 meses'})[0].find('strong').text
     except:
         log.error(soup.find_all("strong", attrs={"class": "value"}))
-        infoAction["valorizacaoCota"] = 0.0
+        infoAction["valorizacao_cota"] = 0.0
     try:
         infoAction["cnpj"] = soup.find_all("small", attrs={"class": "d-block fs-4 fw-100 lh-4"})[0].text
     except:
@@ -150,8 +162,8 @@ def getValuesMoneyStocks(soup):
         infoAction["cnpj"] = None
     try:
         infoAction["linkSiteRi"] = soup.find_all("a", attrs={"rel": "noopener noreferrer nofollow",
-                                                             "class": "waves-effect waves-light btn btn-small btn-secondary"})[
-            0]["href"]
+                                                             "class": "waves-effect waves-light btn btn-small "
+                                                                      "btn-secondary"})[0]["href"]
     except:
         log.error(soup.find_all("a", attrs={"rel": "noopener noreferrer nofollow",
                                             "class": "waves-effect waves-light btn btn-small btn-secondary"}))
@@ -177,7 +189,7 @@ def getValuesMoneyFiis(soup):
     infoAction["valor_cota"] = soup.find('strong').text
     infoAction["dy"] = soup.find_all("strong")[3].text
     infoAction["oscilacao_cota"] = soup.find_all('b')[11].text.strip("\n").lstrip().rstrip()
-    infoAction["valorizacaoCota"] = soup.find_all("strong", attrs={"class": "value"})[4].text
+    infoAction["valorizacao_cota"] = soup.find_all("strong", attrs={"class": "value"})[4].text
     infoAction["cnpj"] = soup.find_all("strong", attrs={"class": "value"})[28].text
     infoAction["linkSiteRi"] = "none"
 
