@@ -45,10 +45,6 @@ class BasicData:
 
         return info_action
 
-    def get_tag_along(self):
-        self.tag_along = self.soup.find_all("strong", attrs={"class": "value"})[6].text
-        return self.tag_along
-
     def get_liquidez_diaria(self):
         self.liquidez_media_diaria = self.soup.find_all("strong", attrs={"class": "value"})[7].text
         return self.liquidez_media_diaria
@@ -61,6 +57,7 @@ class BasicData:
         info_action["ultimo_pagamento"] = _get_value_from_str(str(info_action["ultimo_pagamento"]))
         info_action["oscilacao_cota"] = _get_value_from_str(str(info_action["oscilacao_cota"]))
         info_action["valor_cota"] = _get_value_from_str(str(info_action["valor_cota"]))
+        info_action["tag_along"] = _get_value_from_str(str(info_action["tag_along"]))
 
 
 # ------------------------------------------
@@ -135,20 +132,67 @@ def get_generic_money_values(soup):
     except:
         info_action["linkSiteRi"] = None
 
+    try:
+        info_action["tag_along"] = (soup.select('#main-2 > div:nth-child(4) > div > div.mb-5 > div > div > '
+                                                'div:nth-child(2) > div > div > div > strong'))[0].text.replace(' %',
+                                                                                                                '')
+    except:
+        info_action["tag_along"] = 0
+
     return info_action
 
 
 # -----------------------
 
 def get_values_money_fiis(soup):
-
     info_action["cnpj"] = soup.find_all("strong", attrs={"class": "value"})[28].text
     info_action["linkSiteRi"] = "none"
+
+    pre_setor = soup.find_all("div", {'class': 'company'})[0] \
+        .select('div > div.card.bg-main-gd-h.white-text.rounded.pt-1.pb-1 > div')[0]
+
+    try:
+        info_action["setor"] = pre_setor.select('div:nth-child(1) > div > div > div > a > strong')[0].text
+    except:
+        info_action["setor"] = None
+
+    try:
+        info_action["sub_setor"] = pre_setor.select('div:nth-child(2) > div > div > div > a > strong')[0].text
+    except:
+        info_action["sub_setor"] = None
+
+    try:
+        info_action["segmento"] = pre_setor.select('div:nth-child(3) > div > div > div > a > strong')[0].text
+    except:
+        info_action["segmento"] = None
 
     return info_action
 
 
 # --------------------------
+
+def get_values_stocks(soup):
+    try:
+        pre_setor = soup.find_all("div", {'id': 'company-section'})[0] \
+            .select('div:nth-child(1) > div > div.card.bg-main-gd-h.white-text.rounded.ov-hidden.pt-0.pb-0 > div')[0]
+    except:
+        pre_setor = soup.find_all("div", {'class': 'company'})[0] \
+            .select('div > div.card.bg-main-gd-h.white-text.rounded.pt-1.pb-1 > div')[0]
+    try:
+        info_action["setor"] = pre_setor.select('div:nth-child(1) > div > div > div > a > strong')[0].text
+    except:
+        info_action["setor"] = None
+
+    try:
+        info_action["sub_setor"] = pre_setor.select('div:nth-child(2) > div > div > div > a > strong')[0].text
+    except:
+        info_action["sub_setor"] = None
+
+    try:
+        info_action["segmento"] = pre_setor.select('div:nth-child(3) > div > div > div > a > strong')[0].text
+    except:
+        info_action["segmento"] = None
+
 
 def get_all_values_from_nav(soup, ticker, stock_type):
     comand_basics = BasicData(soup, ticker)
@@ -157,6 +201,7 @@ def get_all_values_from_nav(soup, ticker, stock_type):
     info_action = get_generic_money_values(soup)
 
     if 'acoes' in stock_type:
+        get_values_stocks(soup)
         pass
     elif 'fundos-imobiliarios' in stock_type:
         get_values_money_fiis(soup)

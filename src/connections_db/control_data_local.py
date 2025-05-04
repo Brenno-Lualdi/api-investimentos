@@ -1,8 +1,10 @@
+import os
 import sqlite3
 
 from src.utils.logger import log
 
-DB_PATH = "connections_db/database/tickers.db"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "database", "tickers.db")
 
 
 class DataLocal:
@@ -30,10 +32,10 @@ class DataLocal:
         db = sqlite3.connect(DB_PATH)
         datas = db.execute(f"select * from dataStock order by {order}").fetchall()
         db.close()
-        datasInJson = []
+        datas_in_json = []
         for x in datas:
             if x[0] != "":
-                datasInJson.append({"data": {
+                datas_in_json.append({"data": {
                     "nome": x[0],
                     "info": x[1],
                     "ticker": x[2],
@@ -47,25 +49,31 @@ class DataLocal:
                     "valorizacaoCota": x[10],
                     "cnpj": x[11]}
                 })
-        return {"result": datasInJson}
+        return {"result": datas_in_json}
 
-    def write_data(self, infoAction):
+    def write_data(self, info_action):
         db = sqlite3.connect(DB_PATH)
-        if len(db.execute(f"select * from dataStock where ticker='{infoAction['ticker']}'").fetchall()) >= 1:
-            db.execute(
-                f"update dataStock SET dy={infoAction['dy']}, precoMinimoCotaEmUmAno={infoAction['preco_min_cota']}, "
-                f"precoMaximoCotaEmUmAno={infoAction['preco_max_cota']}, dividendoEmUmAno="
-                f"{infoAction['ultimo_pagamento']}, oscilacaoCota={infoAction['oscilacao_cota']}, valorCota="
-                f"{infoAction['valor_cota']}, cnpj='{infoAction['cnpj']}', linkSiteRi='{infoAction['linkSiteRi']}', "
-                f"valorizacaoCotaUmAno={infoAction['valorizacao_cota']} where ticker='{infoAction['ticker']}'")
-            log.debug("Ação atualizada")
-        else:
-            db.execute(
-                f"insert into dataStock values('{infoAction['nome']}','Nada sobre....','{infoAction['ticker']}',"
-                f"{infoAction['dy']},{infoAction['preco_min_cota']},{infoAction['preco_max_cota']}, "
-                f"{infoAction['ultimo_pagamento']}, {infoAction['oscilacao_cota']},{infoAction['valor_cota']}, "
-                f"'{infoAction['linkSiteRi']}', {infoAction['valorizacao_cota']}, '{infoAction['cnpj']}');")
-            log.debug("Ação inserida")
+        try:
+            if len(db.execute(f"select * from dataStock where ticker='{info_action['ticker']}'").fetchall()) >= 1:
+                db.execute(
+                    f"update dataStock SET dy={info_action['dy']}, precoMinimoCotaEmUmAno={info_action['preco_min_cota']}, "
+                    f"precoMaximoCotaEmUmAno={info_action['preco_max_cota']}, dividendoEmUmAno="
+                    f"{info_action['ultimo_pagamento']}, oscilacaoCota={info_action['oscilacao_cota']}, valorCota="
+                    f"{info_action['valor_cota']}, cnpj='{info_action['cnpj']}', linkSiteRi='{info_action['linkSiteRi']}', "
+                    f"valorizacaoCotaUmAno={info_action['valorizacao_cota']}, tagAlong={info_action['tag_along']}, "
+                    f"setor='{info_action['setor']}', subSetor='{info_action['sub_setor']}', segmento='{info_action['segmento']}' "
+                    f"where ticker='{info_action['ticker']}'")
+                log.debug("Ação atualizada")
+            else:
+                db.execute(
+                    f"insert into dataStock values('{info_action['nome']}','Nada sobre....','{info_action['ticker']}',"
+                    f"{info_action['dy']},{info_action['preco_min_cota']},{info_action['preco_max_cota']}, "
+                    f"{info_action['ultimo_pagamento']}, {info_action['oscilacao_cota']},{info_action['valor_cota']}, "
+                    f"'{info_action['linkSiteRi']}', {info_action['valorizacao_cota']}, '{info_action['cnpj']}', {info_action['tag_along']}, "
+                    f"'{info_action['setor']}', '{info_action['sub_setor']}', '{info_action['segmento']}');")
+                log.debug("Ação inserida")
+        except:
+            log.error(f"Erro ao inserir/atualizar a ação {info_action['ticker']}")
         db.commit()
         db.close()
-        return infoAction
+        return info_action
