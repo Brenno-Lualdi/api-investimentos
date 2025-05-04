@@ -4,7 +4,7 @@ from src.utils.logger import log
 
 
 class DataLocal:
-    def getData(self, ticker: str):
+    def get_data(self, ticker: str):
         db = sqlite3.connect("./database/tickers.db")
         data = db.execute(f"select * from dataStock where ticker='{ticker.upper()}'").fetchall()
         log.debug(data[0])
@@ -23,7 +23,7 @@ class DataLocal:
             "cnpj": data[0][11],
         }
 
-    def getOrderDatas(self, order: str):
+    def get_order_datas(self, order: str):
         db = sqlite3.connect("./database/tickers.db")
         datas = db.execute(f"select * from dataStock order by {order}").fetchall()
         datasInJson = []
@@ -45,7 +45,7 @@ class DataLocal:
                 })
         return {"result": datasInJson}
 
-    def writeData(self, infoAction):
+    def write_data(self, infoAction):
         db = sqlite3.connect("./database/tickers.db")
 
         if len(db.execute(f"select * from dataStock where ticker='{self.ticker}'").fetchall()) >= 1:

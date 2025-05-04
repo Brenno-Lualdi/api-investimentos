@@ -2,48 +2,29 @@ import numpy
 import requests
 from lists import fiis, bdrs, stocks, etfs
 from bs4 import BeautifulSoup
-from get_data_internet import getAllValuesFiis, getAllValuesStocks, getAllValuesEtfs, getAllValuesBdrs
+from get_data_internet import get_all_values_from_nav
 from src.utils.logger import log
 
 totalLengthStocks = len(stocks) + len(fiis) + len(bdrs) + len(etfs)
-totalStocks = stocks
-totalStocks = numpy.append(totalStocks, fiis)
-totalStocks = numpy.append(totalStocks, bdrs)
-totalStocks = numpy.append(totalStocks, etfs)
+total_stocks = stocks
+total_stocks = numpy.append(total_stocks, fiis)
+total_stocks = numpy.append(total_stocks, bdrs)
+total_stocks = numpy.append(total_stocks, etfs)
 
 log.debug("Rodando dnv")
 for x in range(1, totalLengthStocks):
-    typeStock = totalStocks[x]
-    if typeStock in stocks:
+    ticker = total_stocks[x]
 
-        response = requests.get(
-            f"https://statusinvest.com.br/acoes/{typeStock}", headers={"User-Agent": "Mozilla/5.0"})
-        nav = BeautifulSoup(response.text, "html5lib")
-
-        infoAction = getAllValuesStocks(nav, stocks[x].upper())
-        log.debug(f"Atualizando a ação: {typeStock}")
-
-    elif typeStock in fiis:
-
-        response = requests.get(
-            f"https://statusinvest.com.br/fundos-imobiliarios/{typeStock}", headers={"User-Agent": "Mozilla/5.0"})
-        nav = BeautifulSoup(response.text, "html5lib")
-
-        infoAction = getAllValuesFiis(nav, typeStock.upper())
-        log.debug(f"Atualizando o fundo: {typeStock}")
-
-    elif typeStock in etfs:
-        response = requests.get(
-            f"https://statusinvest.com.br/etfs/{typeStock}", headers={"User-Agent": "Mozilla/5.0"})
-        nav = BeautifulSoup(response.text, "html5lib")
-
-        infoAction = getAllValuesEtfs(nav, typeStock.upper())
-        log.debug(f"Atualizando o ETF: {typeStock}")
-
+    if ticker in stocks:
+        stock_type = 'acoes'
+    elif ticker in fiis:
+        stock_type = 'fundos-imobiliarios'
+    elif ticker in etfs:
+        stock_type = 'etfs'
     else:
-        response = requests.get(
-            f"https://statusinvest.com.br/bdrs/{typeStock}", headers={"User-Agent": "Mozilla/5.0"})
-        nav = BeautifulSoup(response.text, "html5lib")
+        stock_type = 'bdrs'
 
-        infoAction = getAllValuesBdrs(nav, typeStock.upper())
-        log.debug(f"Atualizando o BDR: {typeStock}")
+    url = f"https://statusinvest.com.br/{stock_type}/{ticker}"
+    response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+    nav = BeautifulSoup(response.text, "html5lib")
+    infoAction = get_all_values_from_nav(nav, ticker.upper(), stock_type)
