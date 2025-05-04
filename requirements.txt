@@ -9,3 +9,4 @@ html5lib
 python-dotenv
 numpy~=2.2.5
 requests~=2.32.3
+colorama~=0.4.6
